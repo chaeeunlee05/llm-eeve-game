@@ -135,7 +135,7 @@ if st.session_state.response_text:
     sign = '+' if delta >= 0 else ''
     st.markdown(f"❤️ 호감도 변화: {prev} → {now} ({sign}{delta})")
     st.progress(min(now, 100))
-    time.sleep(2)
+    time.sleep(5)
     st.session_state.response_text = ""
     st.rerun()
 
