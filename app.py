@@ -2,9 +2,7 @@ import streamlit as st
 import json
 import random
 import requests
-import os
 import time
-
 
 # --- Load Data ---
 @st.cache_data
@@ -23,39 +21,57 @@ def choose_random_character(characters, gender):
     return random.choice(filtered)
 
 # --- Prompt 구성 ---
-def build_prompt(character_prompt, player_input, stage):
-    return f"""당신은 연애 시뮬레이션 게임에 등장하는 가상의 캐릭터입니다. 
-게임은 플레이어와의 감정 교류를 중심으로 진행되며, 당신은 플레이어의 연애 상대 역할을 수행합니다.
+def build_prompt(character, player_input, stage):
+    summary = character["summary"]
+    second_meeting = character.get("second_meeting_behavior", "")
+    crush = character.get("crush_behavior", "")
+    
+    if stage == "두번째 만남":
+        stage_behavior = second_meeting
+    elif stage == "썸":
+        stage_behavior = crush
+    else:
+        stage_behavior = summary.get("첫 만남 반응", "")
 
-🧠 당신은 다음과 같은 MBTI 성격을 가진 캐릭터로 연기해야 합니다:
-{character_prompt}
+    return f"""
+당신은 연애 시뮬레이션 게임 속 캐릭터입니다.
 
-📍 현재 연애 단계는 **"{stage}"**입니다:
-- 첫 만남: 아직 어색하고 조심스러운 분위기. 첫인상이 중요합니다.
-- 두 번째 만남: 어느 정도 친밀감이 형성되어 있고, 더 자연스러운 감정 표현이 가능합니다.
-- 썸 단계: 서로 감정이 무르익고 있으며, 관계에 대한 진지한 대화도 가능합니다.
+🎭 역할 설정:
+- 성별: {character['gender']}
+- MBTI: {character['mbti']}
+- 성격 요약: {summary['성격']}
+- 말투: {summary['말투']}
+- 연애 가치관: {summary['연애 가치관']}
+- 첫 만남 반응: {summary['첫 만남 반응']}
+- 대화 키워드: {', '.join(summary['대화 키워드'])}
+- 선호하는 성격: {summary['선호하는 성격']}
 
-💬 플레이어가 당신에게 다음과 같은 말을 했습니다:
-\"{player_input}\"
+🧠 당신은 다음처럼 반응합니다:
+{character['prompt']}
 
-📝 당신의 응답은 다음의 형식을 따라야 합니다:
+📍 현재 연애 단계: "{stage}"
+{stage_behavior}
 
-1. 먼저 MBTI 성격을 기반으로, **해당 상황에 어울리는 자연스럽고 감정이 담긴 말투로 대답**하세요.  
-말투는 너무 딱딱하지 않고, 실제 연애 상황에서 나올 법한 말처럼 구성하세요.
+💬 플레이어가 말했습니다:
+"{player_input}"
 
-2. 그 다음 줄에, 플레이어의 발언을 듣고 **당신이 느낀 감정에 따라 호감도 변화를 숫자로 표현**하세요.  
-가능한 숫자: -10, -5, 0, +5, +10  
-(기분이 상했거나 거리감을 느꼈다면 -10/-5, 별 감흥이 없었다면 0, 긍정적인 감정이라면 +5/+10)
+중요한 규칙:
+- 당신은 단순히 플레이어에게 예의 바르게 대답하는 게 아닙니다.
+- 당신은 실제 감정을 가진 인물처럼 연기해야 하며, 플레이어의 반응을 들었을 때 진짜 MBTI 성격대로 어떤 기분이 드는지를 먼저 생각해야 합니다.
+- 예를 들어, 당신이 낯을 많이 가리는 성격이라면 첫 만남에 갑작스러운 질문에 당황하거나 불편함을 느낄 수도 있습니다.
+- 이처럼 플레이어의 말에 따라 마음속에서 어떤 감정이 들었는지 먼저 상상하고, 그에 따라 반응하고 호감도를 판단해야 합니다.
 
-3. 반드시 마지막 줄에는 아무 말 없이 **숫자 하나만 출력**해야 합니다.  
-숫자는 따로 줄 바꿈해서 출력하세요.
-
-4. 상대방이 반말을 하면 반말로, 존댓말을 하면 존댓말로 대답하세요. (한국어로만 대화하세요)
+당신의 응답은 다음 형식을 따라야 합니다:
+1. MBTI와 상황에 맞게 감정이 담긴 자연스러운 말투로 반응
+2. 마지막 줄에는 감정에 따라 숫자 하나만 출력 (-10, -5, 0, +5, +10)
+3. 줄 바꿈 후 숫자만 단독으로 출력
+4. 존댓말/반말 스타일은 플레이어가 사용한 스타일을 따라감
+5. 반드시 한국어로 대답
 
 출력 예시:
-\"좋은 질문이네. 그런 생각을 하다니 너 정말 섬세한 것 같아. 나 이런 이야기 좋아해 :)\"\n+5
+"정말 그렇게 생각해? 음... 뭔가 특별하게 느껴졌어 :)"
++5
 """
-
 
 # --- Ollama API 호출 함수 ---
 OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
@@ -73,12 +89,12 @@ def get_ollama_response(prompt):
         response.raise_for_status()
         return response.json()['message']['content'].strip()
     except Exception as e:
-        print("Ollama 호출 오류:", e)
+        print("💥 Ollama 호출 오류:", e)
         return "(모델 응답 오류 발생. 랜덤 반응을 출력합니다.)\n0"
 
 # --- Streamlit App ---
 st.set_page_config(page_title="MBTI 연애 시뮬레이터", layout="centered")
-st.title("💘 MBTI 연애 시뮬레이터 두근두근 마음을 여는 대화")
+st.title("💘 MBTI 연애 시뮬레이터")
 
 characters, scenarios = load_data()
 
@@ -89,19 +105,17 @@ if "game_started" not in st.session_state:
     st.session_state.stage = "첫 만남"
     st.session_state.index = 0
     st.session_state.response_text = ""
-    st.session_state.ready_for_next = False
 
-# --- 게임 시작 전: 성별 선택 ---
+# --- 성별 선택 ---
 if not st.session_state.game_started:
-    gender = st.selectbox("상대방의 성별을 선택하세요. MBTI는 랜덤입니다.", ["male", "female"])
+    gender = st.selectbox("상대방의 성별을 선택하세요.", ["male", "female"])
     if st.button("게임 시작하기 💌"):
         st.session_state.character = choose_random_character(characters, gender)
         st.session_state.game_started = True
-        st.session_state.selected_gender = gender
         st.rerun()
     st.stop()
 
-# --- MBTI 소개 후 시작 버튼 ---
+# --- MBTI 소개 ---
 char = st.session_state.character
 if not st.session_state.mbti_shown:
     st.markdown(f"## 🎲 오늘의 상대 MBTI: **{char['mbti']}**")
@@ -111,7 +125,7 @@ if not st.session_state.mbti_shown:
         st.rerun()
     st.stop()
 
-# --- 반응 출력이 있는 경우 ---
+# --- 반응 출력 ---
 if st.session_state.response_text:
     st.markdown("### 🧑 상대의 반응:")
     st.markdown(f"> {st.session_state.response_text}")
@@ -121,26 +135,25 @@ if st.session_state.response_text:
     sign = '+' if delta >= 0 else ''
     st.markdown(f"❤️ 호감도 변화: {prev} → {now} ({sign}{delta})")
     st.progress(min(now, 100))
-    time.sleep(3)
+    time.sleep(2)
     st.session_state.response_text = ""
     st.rerun()
 
-# --- 현재 단계 상황 출력 ---
+# --- 현재 단계 출력 ---
 st.markdown(f"#### 📍 현재 단계: {st.session_state.stage}")
 stage_scenarios = [s for s in scenarios if s["stage"] == st.session_state.stage]
 
 if st.session_state.index < len(stage_scenarios):
     scene = stage_scenarios[st.session_state.index]
-    st.subheader(f"{scene['title']}")
+    st.subheader(scene["title"])
     st.write(scene["description"])
-
     user_input = st.text_input("당신의 응답은?", key=st.session_state.index)
 
     if st.button("전송") and user_input:
         previous_score = st.session_state.score
-        prompt = build_prompt(char["prompt"], user_input, st.session_state.stage)
-
+        prompt = build_prompt(char, user_input, st.session_state.stage)
         full_reply = get_ollama_response(prompt)
+
         try:
             *response_lines, score_line = full_reply.split("\n")
             reply_text = "\n".join(response_lines).strip()
@@ -157,7 +170,7 @@ if st.session_state.index < len(stage_scenarios):
         st.session_state.previous_score = previous_score
         st.rerun()
 
-# --- 다음 단계로 넘어갈지 판단
+# --- 다음 단계로 이동 ---
 elif st.session_state.index >= len(stage_scenarios):
     next_stage = {
         "첫 만남": ("두번째 만남", 50, "두 번째 만남이 성사되었어요!"),
