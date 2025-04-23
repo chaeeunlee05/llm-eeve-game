@@ -46,7 +46,7 @@ def get_ollama_response(prompt):
     try:
         response = requests.post(OLLAMA_URL, json=payload)
         response.raise_for_status()
-        return response.json()['message']['content'].strip()
+        return response.text.strip()
     except Exception as e:
         print("💥 Ollama 호출 오류:", e)
         return "(모델 응답 오류 발생. 랜덤 반응을 출력합니다.)\n0"
