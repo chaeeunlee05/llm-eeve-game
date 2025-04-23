@@ -34,7 +34,7 @@ def build_prompt(character_prompt, player_input):
 """
 
 # --- Ollama API 호출 함수 ---
-OLLAMA_URL = "http://localhost:11434/api/chat"  # ← RunPod나 Ollama 서버 주소로 교체!
+OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
 
 def get_ollama_response(prompt):
     payload = {
