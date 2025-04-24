@@ -185,3 +185,24 @@
 | **썸**          | 유지 점수        | 점수 ≥ 80 → 🎉 **연애 성공 엔딩**       | 점수 < 80 → ❌ 연애 실패 엔딩 |
 
 ---
+
+
+## 실제 게임 화면
+![스크린샷 2025-04-24 142313](https://github.com/user-attachments/assets/97d6e5bd-1810-4961-97ae-74fcae6abf3f)
+### 시작화면 & 성별 선택
+
+![스크린샷 2025-04-24 142320](https://github.com/user-attachments/assets/2ee2215c-ca35-4941-b356-a3e7d19a3739)
+### 랜덤 MBTI 지정 & 성격 요약(힌트)
+
+![스크린샷 2025-04-24 142325](https://github.com/user-attachments/assets/ce374e3c-5913-40b0-a4a0-4627c47522f3)
+### 상황 & 입력창
+
+![image](https://github.com/user-attachments/assets/60585a99-4a1e-4b40-abd4-cde0fd844552)
+### 모델 응답 & 호감도 Bar 변화
+
+
+
+
+
+
+
